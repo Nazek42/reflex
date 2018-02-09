@@ -3,10 +3,6 @@ extern crate regex;
 use regex::Regex;
 use std::boxed::Box;
 
-fn convert_regex(re: &str) -> String {
-    format!("^{}", re)
-}
-
 pub struct Ruleset<T>(Vec<(Regex, Box<Fn(&str) -> Option<T>>)>);
 
 impl <T: Copy + 'static> Ruleset<T> {
@@ -15,17 +11,17 @@ impl <T: Copy + 'static> Ruleset<T> {
     }
 
     pub fn add_rule(&mut self, re: &str, rule: Box<Fn(&str)->T>) {
-        let func = Box::new(move |tok: &str| Some(rule(tok)));
+        let func = Box::new(move |_tok: &str| Some(rule(_tok)));
         self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 
     pub fn add_simple(&mut self, re: &str, token: T) {
-        let func = Box::new(move |tok: &str| Some(token));
+        let func = Box::new(move |_tok: &str| Some(token));
         self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 
     pub fn add_noop(&mut self, re: &str) {
-        let func = Box::new(|tok: &str| None);
+        let func = Box::new(|_tok: &str| None);
         self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 }
@@ -39,7 +35,7 @@ impl <'a, T: Copy + 'static> Iterator for Lexer<'a, T> {
     type Item = Result<T, String>;
     fn next(&mut self) -> Option<Result<T, String>> {
         let mut result: Option<Result<T, String>> = None;
-        let mut matched = false;
+        let mut matched;
         while result.is_none() {
             matched = false;
             for &(ref re, ref func) in self.rules.0.iter() {
@@ -69,4 +65,15 @@ pub fn lex<T: Copy + 'static, S: Into<String>>(rules: &Ruleset<T>, text: S) -> L
         rules: rules,
         text: text.into(),
     }
+}
+
+fn convert_regex(re: &str) -> String {
+    format!("^{}", re)
+}
+
+#[macro_export]
+macro_rules! lex_rule {
+    ($body:expr) => (
+        Box::new($body)
+    );
 }
