@@ -1,17 +1,18 @@
 # reflex
 A simple `flex`-like lexing/tokenizing library written in Rust
 
-Current workflow:
+Workflow:
 
 - Define a `Token` enum with all possible tokens that implements `Copy` and `Clone`
-- Initialize a `Lexer` with `reflex::Lexer::<Token>::new()`
+- Create a `Ruleset` with `reflex::Ruleset::<Token>::new()`
 - Add token rules with `add_rule()`, `add_simple()`, and `add_noop()`
-- Call `Lexer::lex()` with the string to be tokenized
-- Use the resultant vector of `Token`s however you like
+- Call `reflex::lex()` with the string to be tokenized
+- Use the resultant lazy iterator however you like
 
-Example code for parsing a simple calculator language:
+Example code for tokenizing a simple calculator language:
 
 ```rust
+#[macro_use]
 extern crate reflex;
 
 use std::io;
@@ -43,26 +44,19 @@ impl fmt::Display for Token {
 fn main() {
     let mut program = String::new();
     io::stdin().read_line(&mut program).unwrap();
-    
-    let mut lexer = reflex::Lexer::<Token>::new();
-    lexer.add_rule(r"-?[0-9]*\.?[0-9]+", Box::new(|tok: &str| Token::Number(tok.parse().unwrap())));
-    lexer.add_simple(r"\+", Token::OpAdd);
-    lexer.add_simple(r"-", Token::OpSub);
-    lexer.add_simple(r"\*", Token::OpMul);
-    lexer.add_simple(r"/", Token::OpDiv);
-    lexer.add_simple(r"\^", Token::OpPow);
-    lexer.add_noop(r"(?s).");
-    let tokens = lexer.lex(program.as_str());
 
-    for token in tokens.iter() {
-        println!("{}", token);
+    let mut ruleset = reflex::Ruleset::<Token>::new();
+    ruleset.add_rule(r"-?[0-9]*\.?[0-9]+", lex_rule!(|token| Token::Number(token.parse().unwrap())));
+    ruleset.add_simple(r"\+", Token::OpAdd);
+    ruleset.add_simple(r"-", Token::OpSub);
+    ruleset.add_simple(r"\*", Token::OpMul);
+    ruleset.add_simple(r"/", Token::OpDiv);
+    ruleset.add_simple(r"\^", Token::OpPow);
+    ruleset.add_noop(r"(?s)\s");
+    let tokens = reflex::lex(&ruleset, program);
+
+    for token in tokens {
+        println!("{}", token.unwrap());
     }
 }
 ```
-
-Planned workflow:
-
-- Define your `Token` enum as above
-- Create as many `Ruleset`s as you like using `add_rule()`, `add_simple()`, and `add_noop()`
-- Call `reflex::lex()` with a ruleset and a string slice
-- Use the resulting lazy iterator however you like
