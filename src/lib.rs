@@ -7,45 +7,66 @@ fn convert_regex(re: &str) -> String {
     format!("^{}", re)
 }
 
-pub struct Lexer<T> {
-    rules: Vec<(Regex, Box<Fn(&str) -> Option<T>>)>,
-}
+pub struct Ruleset<T>(Vec<(Regex, Box<Fn(&str) -> Option<T>>)>);
 
-impl <T: Copy + 'static> Lexer<T> {
-    pub fn new() -> Lexer<T> {
-        Lexer::<T> { rules: Vec::new() }
+impl <T: Copy + 'static> Ruleset<T> {
+    pub fn new() -> Ruleset<T> {
+        Ruleset::<T>(Vec::new())
     }
 
     pub fn add_rule(&mut self, re: &str, rule: Box<Fn(&str)->T>) {
         let func = Box::new(move |tok: &str| Some(rule(tok)));
-        self.rules.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
+        self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 
     pub fn add_simple(&mut self, re: &str, token: T) {
         let func = Box::new(move |tok: &str| Some(token));
-        self.rules.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
+        self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 
     pub fn add_noop(&mut self, re: &str) {
         let func = Box::new(|tok: &str| None);
-        self.rules.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
+        self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
+}
 
-    pub fn lex(&self, raw: &str) -> Vec<T> {
-        let mut tokens = Vec::new();
-        let mut rest = String::new();
-        let mut text = String::from(raw);
-        while !text.is_empty() {
-            for &(ref re, ref func) in self.rules.iter() {
-                if let Some(mat) = re.find(text.clone().as_ref()) {
-                    if let Some(token) = func(&text[mat.start()..mat.end()]) {
-                        tokens.push(token);
+pub struct Lexer<'a, T: Copy + 'static> {
+    rules: &'a Ruleset<T>,
+    text: String,
+}
+
+impl <'a, T: Copy + 'static> Iterator for Lexer<'a, T> {
+    type Item = Result<T, String>;
+    fn next(&mut self) -> Option<Result<T, String>> {
+        let mut result: Option<Result<T, String>> = None;
+        let mut matched = false;
+        while result.is_none() {
+            matched = false;
+            for &(ref re, ref func) in self.rules.0.iter() {
+                if self.text.is_empty() {
+                    return None;
+                }
+                if let Some(mat) = re.find(self.text.clone().as_ref()) {
+                    if let Some(token) = func(&self.text[mat.start()..mat.end()]) {
+                        result = Some(Ok(token));
                     }
-                    rest = String::from(&text[mat.end()..]);
-                    text = rest.clone();
+                    let rest = String::from(&self.text[mat.end()..]);
+                    self.text = rest.clone();
+                    matched = true;
+                    break;
                 }
             }
+            if !matched {
+                result = Some(Err(format!("No rule matched \"{}\"", self.text)));
+            }
         }
-        tokens
+        result
+    }
+}
+
+pub fn lex<T: Copy + 'static, S: Into<String>>(rules: &Ruleset<T>, text: S) -> Lexer<T> {
+    Lexer {
+        rules: rules,
+        text: text.into(),
     }
 }
