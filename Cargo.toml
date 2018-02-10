@@ -1,6 +1,9 @@
 [package]
 name = "reflex"
 version = "0.1.0"
+description = "A minimal flex-like lexer"
+license = "MIT"
+repository = "https://github.com/nazek42/reflex"
 authors = ["bkul"]
 
 [dependencies]
