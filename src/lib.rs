@@ -5,7 +5,7 @@ use std::boxed::Box;
 
 pub struct Ruleset<T>(Vec<(Regex, Box<Fn(&str) -> Option<T>>)>);
 
-impl <T: Copy + 'static> Ruleset<T> {
+impl <T: Clone + 'static> Ruleset<T> {
     pub fn new() -> Ruleset<T> {
         Ruleset::<T>(Vec::new())
     }
@@ -16,7 +16,7 @@ impl <T: Copy + 'static> Ruleset<T> {
     }
 
     pub fn add_simple(&mut self, re: &str, token: T) {
-        let func = Box::new(move |_tok: &str| Some(token));
+        let func = Box::new(move |_tok: &str| Some(token.clone()));
         self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }
 
@@ -26,12 +26,12 @@ impl <T: Copy + 'static> Ruleset<T> {
     }
 }
 
-pub struct Lexer<'a, T: Copy + 'static> {
+pub struct Lexer<'a, T: Clone + 'static> {
     rules: &'a Ruleset<T>,
     text: String,
 }
 
-impl <'a, T: Copy + 'static> Iterator for Lexer<'a, T> {
+impl <'a, T: Clone + 'static> Iterator for Lexer<'a, T> {
     type Item = Result<T, String>;
     fn next(&mut self) -> Option<Result<T, String>> {
         let mut result: Option<Result<T, String>> = None;
@@ -60,7 +60,7 @@ impl <'a, T: Copy + 'static> Iterator for Lexer<'a, T> {
     }
 }
 
-pub fn lex<T: Copy + 'static, S: Into<String>>(rules: &Ruleset<T>, text: S) -> Lexer<T> {
+pub fn lex<T: Clone + 'static, S: Into<String>>(rules: &Ruleset<T>, text: S) -> Lexer<T> {
     Lexer {
         rules: rules,
         text: text.into(),
