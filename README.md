@@ -3,7 +3,7 @@ A simple `flex`-like lexing/tokenizing library written in Rust
 
 Workflow:
 
-- Define a `Token` enum with all possible tokens that implements `Copy` and `Clone`
+- Define a `Token` enum with all possible tokens that implements `Clone`
 - Create a `Ruleset` with `reflex::Ruleset::<Token>::new()`
 - Add token rules with `add_rule()`, `add_simple()`, and `add_noop()`
 - Call `reflex::lex()` with the string to be tokenized
@@ -18,7 +18,7 @@ extern crate reflex;
 use std::io;
 use std::fmt;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 enum Token {
     Number(f64),
     OpAdd,
