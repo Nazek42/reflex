@@ -10,7 +10,7 @@ impl <T: Clone + 'static> Ruleset<T> {
         Ruleset::<T>(Vec::new())
     }
 
-    pub fn add_rule(&mut self, re: &str, rule: Box<Fn(&str)->T>) {
+    pub fn add_rule<F: 'static + Fn(&str)->T>(&mut self, re: &str, rule: F) {
         let func = Box::new(move |_tok: &str| Some(rule(_tok)));
         self.0.push((Regex::new(convert_regex(re).as_ref()).unwrap(), func));
     }

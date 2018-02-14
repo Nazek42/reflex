@@ -4,19 +4,19 @@ A simple `flex`-like lexing/tokenizing library written in Rust
 Workflow:
 
 - Define a `Token` enum with all possible tokens that implements `Clone`
-- Create a `Ruleset` with `reflex::Ruleset::<Token>::new()`
+- Create a `Ruleset` with `Ruleset::<Token>::new()`
 - Add token rules with `add_rule()`, `add_simple()`, and `add_noop()`
-- Call `reflex::lex()` with the string to be tokenized
+- Call `lex()` with the string to be tokenized
 - Use the resultant lazy iterator however you like
 
 Example code for tokenizing a simple calculator language:
 
 ```rust
-#[macro_use]
 extern crate reflex;
 
 use std::io;
 use std::fmt;
+use reflex::{Ruleset, lex};
 
 #[derive(Clone)]
 enum Token {
@@ -45,17 +45,16 @@ fn main() {
     let mut program = String::new();
     io::stdin().read_line(&mut program).unwrap();
 
-    let mut ruleset = reflex::Ruleset::<Token>::new();
-    ruleset.add_rule(r"-?[0-9]*\.?[0-9]+", lex_rule!(|token| Token::Number(token.parse().unwrap())));
+    let mut ruleset: Ruleset<Token> = Ruleset::new();
+    ruleset.add_rule(r"-?[0-9]*\.?[0-9]+", |token| Token::Number(token.parse().unwrap_or(0.0)));
     ruleset.add_simple(r"\+", Token::OpAdd);
     ruleset.add_simple(r"-", Token::OpSub);
     ruleset.add_simple(r"\*", Token::OpMul);
     ruleset.add_simple(r"/", Token::OpDiv);
     ruleset.add_simple(r"\^", Token::OpPow);
     ruleset.add_noop(r"(?s)\s");
-    let tokens = reflex::lex(&ruleset, program);
 
-    for token in tokens {
+    for token in lex(&ruleset, program) {
         println!("{}", token.unwrap());
     }
 }
