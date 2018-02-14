@@ -70,10 +70,3 @@ pub fn lex<T: Clone + 'static, S: Into<String>>(rules: &Ruleset<T>, text: S) -> 
 fn convert_regex(re: &str) -> String {
     format!("^{}", re)
 }
-
-#[macro_export]
-macro_rules! lex_rule {
-    ($body:expr) => (
-        Box::new($body)
-    );
-}
