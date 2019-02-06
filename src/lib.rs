@@ -46,8 +46,7 @@ impl <'a, T: Clone + 'static> Iterator for Lexer<'a, T> {
                     if let Some(token) = func(&self.text[mat.start()..mat.end()]) {
                         result = Some(Ok(token));
                     }
-                    let rest = String::from(&self.text[mat.end()..]);
-                    self.text = rest.clone();
+                    self.text = String::from(&self.text[mat.end()..]);
                     matched = true;
                     break;
                 }
