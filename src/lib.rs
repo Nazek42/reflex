@@ -53,6 +53,7 @@ impl <'a, T: Clone + 'static> Iterator for Lexer<'a, T> {
             }
             if !matched {
                 result = Some(Err(format!("No rule matched \"{}\"", self.text)));
+                self.text.clear();
             }
         }
         result
